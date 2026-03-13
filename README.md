@@ -9,7 +9,8 @@ A full-stack mindfulness journaling application that uses LLM-powered emotion an
 ### Prerequisites
 - **Node.js 18 or 20 LTS** (recommended) — Node 24 may cause issues
 - Uses `sql.js` (pure JS SQLite — no Visual Studio / build tools needed)
-- An [Groq API key]((https://console.groq.com/keys))
+- An [Groq API key](https://console.groq.com/keys)
+
 
 ---
 
