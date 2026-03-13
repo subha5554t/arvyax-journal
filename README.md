@@ -1,59 +1,79 @@
-# 🌿 ArvyaX AI-Assisted Journal System
+# 🌿 ArvyaX — AI-Assisted Nature Journal
 
-A full-stack mindfulness journaling application that uses LLM-powered emotion analysis to help users understand their mental state over time after immersive nature sessions.
+A full-stack mindfulness journaling app where users write about their nature sessions (forest, ocean, mountain) and get **AI-powered emotion analysis** to understand their mental state over time.
+
+🔗 **Live Demo:** https://arvyax-journal-five.vercel.app  
+🔧 **Backend API:** https://arvyax-journal-bhns.onrender.com
 
 ---
 
-## 🚀 Quick Start
+## ✨ Features
+
+- 📝 **Journal Entries** — Write about your nature sessions with ambience tags
+- 🤖 **AI Emotion Analysis** — Powered by Groq (Llama 3.3) to detect emotions, keywords and summaries
+- 📊 **Insights Dashboard** — Track your top emotions, favourite ambience and recent keywords over time
+- 🔐 **Authentication** — Register and login with JWT + bcrypt password hashing
+- ⚡ **Analysis Caching** — LRU cache to avoid duplicate LLM calls
+- 🚦 **Rate Limiting** — 200 req/15min general, 10 req/min on analyze
+- 🌊 **Streaming LLM** — Optional SSE streaming for analysis responses
+- 🐳 **Docker Support** — One command full stack deployment
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Node.js 20 + Express 4 |
+| Database | SQLite (sql.js — no native build needed) |
+| LLM | Groq API (Llama 3.3 70B) |
+| Auth | JWT + bcryptjs |
+| Frontend | React 18 + Vite |
+| Hosting | Render (backend) + Vercel (frontend) |
+| Docker | Docker Compose + Nginx |
+
+---
+
+## 🚀 Quick Start (Local)
 
 ### Prerequisites
-- **Node.js 18 or 20 LTS** (recommended) — Node 24 may cause issues
-- Uses `sql.js` (pure JS SQLite — no Visual Studio / build tools needed)
-- An [Groq API key](https://console.groq.com/keys)
+- Node.js 18 or 20 LTS
+- Groq API key (free at [console.groq.com](https://console.groq.com))
 
-
----
-
-### Option 1 — Local Development
-
-#### 1. Clone & Configure
-
+### 1. Clone the repo
 ```bash
-git clone <repo-url>
+git clone https://github.com/subha5554t/arvyax-journal.git
 cd arvyax-journal
 ```
 
-#### 2. Backend
-
+### 2. Setup Backend
 ```bash
 cd backend
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env and add your keys
 npm install
 npm run dev
-# API running on http://localhost:5000
+# API running at http://localhost:5000
 ```
 
-#### 3. Frontend
-
+### 3. Setup Frontend
 ```bash
 cd ../frontend
 npm install
 npm run dev
-# UI running on http://localhost:5173
+# App running at http://localhost:5173
 ```
-
-Open `http://localhost:5173` in your browser.
 
 ---
 
-### Option 2 — Docker (Recommended for production)
+## 🐳 Docker Setup (One Command)
 
 ```bash
-# Create a .env file in the project root
-echo "ANTHROPIC_API_KEY=your_key_here" > .env
+# Create .env in root folder
+echo "GROQ_API_KEY=your_key_here" > .env
+echo "JWT_SECRET=your_secret_here" >> .env
 
-# Build and start
+# Start everything
 docker compose up --build
 
 # App available at http://localhost:3000
@@ -61,71 +81,65 @@ docker compose up --build
 
 ---
 
+## 🔑 Environment Variables
+
+Create `backend/.env` from `backend/.env.example`:
+
+```env
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxx
+JWT_SECRET=your_long_random_secret
+PORT=5000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
+DB_PATH=./data/journal.db
+```
+
+---
+
 ## 📡 API Reference
 
-All endpoints are prefixed with `/api/journal`.
+### Auth Endpoints
 
-### `POST /api/journal`
-Create a new journal entry.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Create new account |
+| POST | `/api/auth/login` | Login and get JWT token |
+| GET | `/api/auth/me` | Get current user |
 
-**Request:**
-```json
+### Journal Endpoints (🔐 Auth Required)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/journal` | Create journal entry |
+| GET | `/api/journal` | Get all entries for user |
+| POST | `/api/journal/analyze` | Analyze emotions with AI |
+| GET | `/api/journal/insights` | Get aggregated insights |
+
+---
+
+### Example — Create Entry
+```bash
+POST /api/journal
+Authorization: Bearer <token>
+
 {
-  "userId": "123",
   "ambience": "forest",
   "text": "I felt calm today after listening to the rain."
 }
 ```
 
-**Response `201`:**
-```json
-{
-  "message": "Journal entry created successfully",
-  "entry": {
-    "id": 1,
-    "userId": "123",
-    "ambience": "forest",
-    "text": "I felt calm today after listening to the rain.",
-    "emotion": null,
-    "keywords": null,
-    "summary": null,
-    "createdAt": "2025-01-01T10:00:00.000Z"
-  }
-}
-```
+### Example — Analyze Emotions
+```bash
+POST /api/journal/analyze
+Authorization: Bearer <token>
 
----
-
-### `GET /api/journal/:userId`
-Retrieve all journal entries for a user.
-
-**Query params:** `?limit=50&offset=0`
-
-**Response `200`:**
-```json
-{
-  "entries": [...],
-  "total": 8,
-  "limit": 50,
-  "offset": 0
-}
-```
-
----
-
-### `POST /api/journal/analyze`
-Run LLM emotion analysis on a text snippet.
-
-**Request:**
-```json
 {
   "text": "I felt calm today after listening to the rain",
-  "entryId": 1,
-  "stream": false
+  "entryId": 1
 }
 ```
 
-**Response `200`:**
+Response:
 ```json
 {
   "emotion": "calm",
@@ -135,14 +149,13 @@ Run LLM emotion analysis on a text snippet.
 }
 ```
 
-> Set `"stream": true` to receive a Server-Sent Events stream instead.
+### Example — Get Insights
+```bash
+GET /api/journal/insights
+Authorization: Bearer <token>
+```
 
----
-
-### `GET /api/journal/insights/:userId`
-Aggregated mental health insights for a user.
-
-**Response `200`:**
+Response:
 ```json
 {
   "totalEntries": 8,
@@ -161,24 +174,26 @@ Aggregated mental health insights for a user.
 arvyax-journal/
 ├── backend/
 │   ├── src/
-│   │   ├── server.js          # Express app + middleware
-│   │   ├── database.js        # SQLite setup & schema
-│   │   ├── cache.js           # In-memory LRU analysis cache
+│   │   ├── server.js              # Express app + middleware
+│   │   ├── database.js            # SQLite schema (users + entries)
+│   │   ├── cache.js               # LRU analysis cache
+│   │   ├── middleware/
+│   │   │   └── auth.js            # JWT auth middleware
 │   │   └── routes/
-│   │       └── journal.js     # All journal API routes
+│   │       ├── auth.js            # Register + Login
+│   │       └── journal.js         # Journal CRUD + AI analysis
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx            # Main React application
-│   │   ├── main.jsx           # React entry point
-│   │   └── index.css          # Global styles
+│   │   ├── App.jsx                # Full React app (auth + journal UI)
+│   │   ├── main.jsx               # React entry point
+│   │   └── index.css              # Nature-themed design system
 │   ├── index.html
 │   ├── vite.config.js
 │   ├── Dockerfile
-│   ├── nginx.conf
-│   └── package.json
+│   └── nginx.conf
 ├── docker-compose.yml
 ├── README.md
 └── ARCHITECTURE.md
@@ -186,35 +201,29 @@ arvyax-journal/
 
 ---
 
-## 🔑 Environment Variables
+## 🌟 Bonus Features
 
-| Variable           | Required | Default              | Description                     |
-|--------------------|----------|----------------------|---------------------------------|
-| `ANTHROPIC_API_KEY`| ✅ Yes   | —                    | Anthropic Claude API key        |
-| `PORT`             | No       | `5000`               | Backend server port             |
-| `NODE_ENV`         | No       | `development`        | Node environment                |
-| `CORS_ORIGIN`      | No       | `http://localhost:5173` | Allowed CORS origin          |
-| `DB_PATH`          | No       | `./data/journal.db`  | SQLite database path            |
+| Feature | Status |
+|---------|--------|
+| JWT Authentication | ✅ |
+| Streaming LLM response | ✅ |
+| Analysis caching (LRU) | ✅ |
+| Rate limiting | ✅ |
+| Docker setup | ✅ |
+| Deployed demo | ✅ |
 
----
-
-## 🌟 Bonus Features Implemented
-
-| Feature                | Status | Details                                      |
-|------------------------|--------|----------------------------------------------|
-| Streaming LLM          | ✅     | `POST /api/journal/analyze` with `stream: true` uses SSE |
-| Analysis Caching       | ✅     | In-memory LRU cache keyed by SHA-256 of text |
-| Rate Limiting          | ✅     | 200 req/15min general; 10 req/min on analyze |
-| Docker Setup           | ✅     | `docker-compose.yml` with health checks      |
 
 ---
 
-## 🛠 Tech Stack
+## 🚀 Deployment
 
-| Layer    | Technology               |
-|----------|--------------------------|
-| Backend  | Node.js 20 + Express 4   |
-| Database | SQLite (better-sqlite3)  |
-| LLM      |  Groq ,llama-3.3-70b-versatile |
-| Frontend | React 18 + Vite          |
-| Proxy    | Nginx (Docker)           |
+| Service | Platform | URL |
+|---------|----------|-----|
+| Frontend | Vercel | https://arvyax-journal-five.vercel.app |
+| Backend | Render | https://arvyax-journal-bhns.onrender.com |
+
+---
+
+## 📄 License
+
+MIT License — feel free to use this project for learning and reference.
