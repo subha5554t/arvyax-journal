@@ -215,6 +215,6 @@ arvyax-journal/
 |----------|--------------------------|
 | Backend  | Node.js 20 + Express 4   |
 | Database | SQLite (better-sqlite3)  |
-| LLM      | Anthropic Claude Haiku   |
+| LLM      |  Groq ,llama-3.3-70b-versatile |
 | Frontend | React 18 + Vite          |
 | Proxy    | Nginx (Docker)           |
